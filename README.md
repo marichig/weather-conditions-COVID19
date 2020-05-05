@@ -1,6 +1,6 @@
 # Supplementary Code and Data for "Weather Conditions and COVID-19 Transmission: Estimates and Projections," Xu et al.
 
-This repository provides the code and data needed to replicate the results presented in [Xu et al][paper]. The [appendix][appendix] provides good detail on the methods used and should be viewed in tandem with the code, however we also provide some direction here for running the analyses.
+This repository provides the code and data needed to replicate the results presented in [Xu et al][paper]. The [appendix][appendix] provides detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
 
 This paper can be cited as:
 >"Weather Conditions and COVID-19 Transmission: Estimates and Projections,"
