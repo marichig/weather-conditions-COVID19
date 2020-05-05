@@ -1,4 +1,4 @@
-## Code and Data for Sections 2,3, and 5.2
+## Code and Data for Sections 2.3, and 5.2
 - SyntheticDataExploration.zip provides code and data used to conduct synthetic data analysis reported in online supplement S5.2. Specifically, the following files are included:
 - DelayEstimation.m: This Matlab function generates the distribution of detection delay, discussed in the main text and section S2 of the online appendix.
 - delaySolve2.m: This Matlab function solves for true infection data given infection measurements and a delay function.
