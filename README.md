@@ -14,10 +14,10 @@ msjalali \[at] mgh \[dot] harvard \[dot] edu
 
 
 ## Links
-[Project website, including an interactive simulator]: https://projects.iq.harvard.edu/covid19
+[Project website, including an interactive simulator](https://projects.iq.harvard.edu/covid19)
 
-[paper and appendix] on SSRN: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
-[paper and appendix] on ResearchGate: https://www.researchgate.net/publication/341165460_Weather_Conditions_and_COVID-19_Transmission_Estimates_and_Projections 
+Paper and appendix on [SSRN](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879)
+Paper and appendix on [ResearchGate](https://www.researchgate.net/publication/341165460_Weather_Conditions_and_COVID-19_Transmission_Estimates_and_Projections) 
 
 ## Sections
 The code for this project is broken into four parts:
