@@ -14,9 +14,10 @@ msjalali \[at] mgh \[dot] harvard \[dot] edu
 
 
 ## Links
-* The pre-print and supplementary appendix are available [here][paper].
-<!--* The supplementary appendix is available [here][appendix].-->
-* The project website is available [here][website].
+[Project website, including an interactive simulator]: https://projects.iq.harvard.edu/covid19
+
+[paper and appendix] on SSRN: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
+[paper and appendix] on ResearchGate: https://www.researchgate.net/publication/341165460_Weather_Conditions_and_COVID-19_Transmission_Estimates_and_Projections 
 
 ## Sections
 The code for this project is broken into four parts:
@@ -24,9 +25,3 @@ The code for this project is broken into four parts:
 2. [ABM](ABM) provides code for running the agent-based model used to generate synthetic data for testing.
 3. [SyntheticDataExploration](SyntheticDataExploration) provides code for preprocessing the synthetic case data into a metric incorporating detection delay. This preprocessing was also applied to real case data from JHU.
 4. [StatisticalAnalyses](StatisticalAnalyses) provides STATA code for performing the regression analyses.
-
-
-[paper and appendix] on SSRN: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
-[paper and appendix] on ResearchGate: https://www.researchgate.net/publication/341165460_Weather_Conditions_and_COVID-19_Transmission_Estimates_and_Projections 
-
-[Project website]: https://projects.iq.harvard.edu/covid19
