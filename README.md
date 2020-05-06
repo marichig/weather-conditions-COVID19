@@ -3,8 +3,7 @@
 This repository provides the code and data needed to replicate the results presented in [Xu et al][paper]. The [appendix][appendix] provides detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
 
 This paper can be cited as:
->"Weather Conditions and COVID-19 Transmission: Estimates and Projections,"
-> etc etc fill in
+>Xu, Ran and Rahmandad, Hazhir and Gupta, Marichi and DiGennaro, Catherine and Ghaffarzadegan, Navid and Jalali, Mohammad, Weather Conditions and COVID-19 Transmission: Estimates and Projections (May 5, 2020). Available at SSRN: https://ssrn.com/abstract=3593879
 
 Correspondance can be directed to:
 
@@ -14,13 +13,9 @@ Massachusetts General Hospital, Institute for Technology Assessment<br/>
 msjalali \[at] mgh \[dot] harvard \[dot] edu
 
 
-## MG TODO
-- License? [MIT License](https://opensource.org/licenses/MIT) is a common one for open-source projects
-- Fill in pre-print/other URL references
-
 ## Links
-* The pre-print/publication is available [here][paper].
-* The supplementary appendix is available [here][appendix].
+* The pre-print and supplementary appendix are available [here][paper].
+<!--* The supplementary appendix is available [here][appendix].-->
 * The project website is available [here][website].
 
 ## Sections
@@ -31,6 +26,6 @@ The code for this project is broken into four parts:
 4. [StatisticalAnalyses](StatisticalAnalyses) provides STATA code for performing the regression analyses.
 
 
-[paper]: https://projects.iq.harvard.edu/covid19/people
-[appendix]: https://projects.iq.harvard.edu/covid19/people
+[paper]: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
+[appendix]: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
 [website]: https://projects.iq.harvard.edu/covid19/people
