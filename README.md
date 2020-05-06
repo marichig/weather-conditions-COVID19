@@ -7,7 +7,7 @@ This paper can be cited as:
 
 Correspondance can be directed to:
 
-Mohammad "MJ" Jalali, Ph. D<br/>
+Mohammad Jalali ('MJ'), Ph.D.<br/>
 Assistant Professor, Harvard Medical School<br/>
 Massachusetts General Hospital, Institute for Technology Assessment<br/>
 msjalali \[at] mgh \[dot] harvard \[dot] edu
@@ -26,6 +26,7 @@ The code for this project is broken into four parts:
 4. [StatisticalAnalyses](StatisticalAnalyses) provides STATA code for performing the regression analyses.
 
 
-[paper]: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
-[appendix]: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
-[website]: https://projects.iq.harvard.edu/covid19/people
+[paper and appendix] on SSRN: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879
+[paper and appendix] on ResearchGate: https://www.researchgate.net/publication/341165460_Weather_Conditions_and_COVID-19_Transmission_Estimates_and_Projections 
+
+[Project website]: https://projects.iq.harvard.edu/covid19
