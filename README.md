@@ -1,9 +1,9 @@
 # Supplementary Code and Data for "Weather Conditions and COVID-19 Transmission: Estimates and Projections," Xu et al.
 
-This repository provides the code and data needed to replicate the results presented in [Xu et al][paper]. The [appendix][appendix] provides detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
+This repository provides the code and data needed to replicate the results presented in [Xu et al.](https://ssrn.com/abstract=3593879). The paper and its appendix provide detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
 
-This paper can be cited as:
->Xu, Ran and Rahmandad, Hazhir and Gupta, Marichi and DiGennaro, Catherine and Ghaffarzadegan, Navid and Jalali, Mohammad, Weather Conditions and COVID-19 Transmission: Estimates and Projections (May 5, 2020). Available at SSRN: https://ssrn.com/abstract=3593879
+This research can be cited as:
+>Xu R.,  Rahmandad H., Gupta M., DiGennaro C., Ghaffarzadegan N., Jalali M.S., Weather Conditions and COVID-19 Transmission: Estimates and Projections, May 5, 2020), Social Science Research Network: https://ssrn.com/abstract=3593879
 
 Correspondance can be directed to:
 
