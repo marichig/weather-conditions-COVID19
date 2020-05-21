@@ -12,6 +12,7 @@ Assistant Professor, Harvard Medical School<br/>
 Massachusetts General Hospital, Institute for Technology Assessment<br/>
 msjalali \[at] mgh \[dot] harvard \[dot] edu
 
+5/21 Note: We are including pollution variables in the study, and will push our new files over the coming few days.
 
 ## Links
 [Project website, including an interactive simulator](https://projects.iq.harvard.edu/covid19)
