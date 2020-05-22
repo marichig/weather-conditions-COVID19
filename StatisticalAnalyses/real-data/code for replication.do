@@ -1,6 +1,7 @@
-
-*generate R0, weather, trend all the variables needed
+*****Statistical analysis in the manuscript and online supplementary document
 sort location_name time
+
+gen abs_humid=6.112*exp(17.67*avgtemp/(243.5+avgtemp))*humid*2.1674/(273.15+avgtemp)
 
 gen diff_temp=maxtemp-mintemp
 
@@ -11,6 +12,14 @@ gen ln_precip=log(precip+1)
 gen ln_totalsnow=log(totalsnow+1) 
 
 gen ln_windspeed=log(windspeed+1) 
+
+gen ln_so2=log(so+1) 
+
+gen ln_no2=log(no+1) 
+
+gen ln_pm=log(pm+1)
+
+gen ln_ozone=log(ozone+1)
 
 gen ln_popdensity=log(Density_persqkm)
 
@@ -64,7 +73,7 @@ gen r0_3=20*expo/sumexpo2
 
 gen ln_r0_3=log(r0_3)
 
-foreach var of varlist  moonillu ln_totalsnow ln_windspeed pss_std ln_precip humid avgtemp sunhour diff_temp{
+foreach var of varlist so no ozone pm visi winddir cloudcover moonillu ln_totalsnow ln_windspeed pss_std ln_precip humid avgtemp sunhour diff_temp{
 
 by location_name:  generate `var'_2 = `var'
 gen sq_`var'_2=`var'_2^2
@@ -80,17 +89,73 @@ egen locationid=group(location_name)
 
 gen china_province=1 if Country=="China" & Province_State!=""
 
+
 sort location_name time
 gen first_expo=.
 by location_name: replace first_expo=cond(expo>=1 & expo<. & first_expo[_n-1]==.,_n,first_expo[_n-1])
 by location_name: gen xxx=_n if first_expo!=.
 replace xxx=xxx-first_expo+1
 
-forval i = 1/3739 {
-  	gen trend`i'=xxx if locationid==`i'
-	replace trend`i'=0 if trend`i'==.
- }
- 
+sort location_name time
+by location_name: gen uvindex_1 = uvindex[_n-1]
+by location_name: gen uvindex_2 = uvindex[_n-2]
+by location_name: gen uvindex_3 = uvindex[_n-3]
+by location_name: gen uvindex_4 = uvindex[_n-4]
+by location_name: gen uvindex_5 = uvindex[_n-5]
+by location_name: gen uvindex_6 = uvindex[_n-6]
+by location_name: gen uvindex_7 = uvindex[_n-7]
+by location_name: gen uvindex_8 = uvindex[_n-8]
+by location_name: gen uvindex_9 = uvindex[_n-9]
+by location_name: gen uvindex_10 = uvindex[_n-10]
+by location_name: gen uvindex_11 = uvindex[_n-11]
+by location_name: gen uvindex_12 = uvindex[_n-12]
+by location_name: gen uvindex_13 = uvindex[_n-13]
+by location_name: gen uvindex_14 = uvindex[_n-14]
+
+egen avg_uvindex=rowmean(uvindex_1-uvindex_13 uvindex)
+
+gen avg_uv_std=avg_uvindex-6.86
+gen sq_avg_uv_std=(avg_uv_std)^2
+
+gen uv_std=uvindex-7.13
+gen sq_uv_std=(uv_std)^2
+
+gen avgtemp_std=avgtemp_2-12.75
+gen sq_avgtemp_std=(avgtemp_std)^2
+
+
+sort location_name time
+by location_name: gen ln_so2_1 = ln_so2[_n-1]
+by location_name: gen ln_so2_2 = ln_so2[_n-2]
+by location_name: gen ln_so2_3 = ln_so2[_n-3]
+by location_name: gen ln_so2_4 = ln_so2[_n-4]
+by location_name: gen ln_so2_5 = ln_so2[_n-5]
+by location_name: gen ln_so2_6 = ln_so2[_n-6]
+by location_name: gen ln_so2_7 = ln_so2[_n-7]
+
+by location_name: gen ln_pm_1 = ln_pm[_n-1]
+by location_name: gen ln_pm_2 = ln_pm[_n-2]
+by location_name: gen ln_pm_3 = ln_pm[_n-3]
+by location_name: gen ln_pm_4 = ln_pm[_n-4]
+by location_name: gen ln_pm_5 = ln_pm[_n-5]
+by location_name: gen ln_pm_6 = ln_pm[_n-6]
+by location_name: gen ln_pm_7 = ln_pm[_n-7]
+
+by location_name: gen ln_ozone_1 = ln_ozone[_n-1]
+by location_name: gen ln_ozone_2 = ln_ozone[_n-2]
+by location_name: gen ln_ozone_3 = ln_ozone[_n-3]
+by location_name: gen ln_ozone_4 = ln_ozone[_n-4]
+by location_name: gen ln_ozone_5 = ln_ozone[_n-5]
+by location_name: gen ln_ozone_6 = ln_ozone[_n-6]
+by location_name: gen ln_ozone_7 = ln_ozone[_n-7]
+
+egen avg_so2=rowmean(ln_so2 ln_so2_1-ln_so2_7)
+egen avg_pm=rowmean(ln_pm ln_pm_1-ln_pm_7)
+egen avg_ozone=rowmean(ln_ozone ln_ozone_1-ln_ozone_7)
+
+
+*linear spline
+
 mkspline x11 -15 x12 = avgtemp_2 
 mkspline x21 -10 x22 = avgtemp_2 
 mkspline x31 -5 x32 = avgtemp_2 
@@ -102,271 +167,384 @@ mkspline x81 20 x82 = avgtemp_2
 mkspline x91 25 x92 = avgtemp_2 
 mkspline x101 30 x102 = avgtemp_2 
 
-*****ANALYSIS
+mkspline stemp1 -5 stemp2 25 stemp3 = avgtemp_2
 
-*using fixed effects and quadratic effect of temperature
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-fixed.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
- 
-*only include trends and quadratic effect of temperature 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-nofixed.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-nofixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-nofixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-nofixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 avgtemp_2 sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-nofixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+mkspline uvspline11 4 uvspline12 12 uvspline13= uvindex
 
 
+*main effects and various robustness check
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using main.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using main.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2 i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using main.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2 i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using main.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using main.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-*linear spline effect of temperature, testing different knots
 
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x11 x12  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x11 x12 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls1.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x21 x22  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x21 x22 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38  
 outreg2 using ls1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x31 x32  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x31 x32 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x41 x42  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x41 x42 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x51 x52  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x51 x52 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x61 x62  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x61 x62 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls2.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x71 x72  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x71 x72 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38  
 outreg2 using ls2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x81 x82  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x81 x82 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x101 x102  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
+reg ln_r0_3  ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x101 x102 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
 outreg2 using ls2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-* main specification with knot at 25 for temperature
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls3.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
-
-*sensitivity to exclusion of last 4 days of data
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 &time<=100
-outreg2 using ls4.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 &time<=100
-outreg2 using ls4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 &time<=100
-outreg2 using ls4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 &time<=100
-outreg2 using ls4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   ln_popdensity trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 &time<=100
-outreg2 using ls4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
-
-*sensitivity to inclusin of fixed effects
-
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls5.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92  sunhour_2 diff_temp_2 humid_2   i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using ls5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
 
-*sensitivity to exclusion of large R0
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35  &r0_3<6.63
-outreg2 using myreg-lsextreme.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 &r0_3<6.63
-outreg2 using myreg-lsextreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 &r0_3<6.63
-outreg2 using myreg-lsextreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 &r0_3<6.63
-outreg2 using myreg-lsextreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 &r0_3<6.63
-outreg2 using myreg-lsextreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-*testing various interaction effects
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.diff_temp_2##c.x91 c.diff_temp_2##c.x92 sunhour_2          diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int1.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.diff_temp_2##c.x91 c.diff_temp_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.diff_temp_2##c.x91 c.diff_temp_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.diff_temp_2##c.x91 c.diff_temp_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.diff_temp_2##c.x91 c.diff_temp_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 &time<=100
+outreg2 using main-sen1.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 &time<=100
+outreg2 using main-sen1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 &time<=100
+outreg2 using main-sen1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 &time<=100
+outreg2 using main-sen1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  &time<=100
+outreg2 using main-sen1.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2          diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35  & r0_3<=6.63
-outreg2 using myreg-int2extreme.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 & r0_3<=6.63
-outreg2 using myreg-int2extreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 & r0_3<=6.63
-outreg2 using myreg-int2extreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 & r0_3<=6.63
-outreg2 using myreg-int2extreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35  & r0_3<=6.63
-outreg2 using myreg-int2extreme.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & r0_3<=6.67
+outreg2 using main-sen2.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & r0_3<=6.67
+outreg2 using main-sen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & r0_3<=6.67
+outreg2 using main-sen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & r0_3<=6.67
+outreg2 using main-sen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & r0_3<=6.67
+outreg2 using main-sen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2          diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2fixed.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35
-outreg2 using myreg-int2fixed.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.pss_std_2##c.x91 c.pss_std_2##c.x92 c.sq_pss_std_2##c.x91 c.sq_pss_std_2##c.x92  sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int3.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.pss_std_2##c.x91 c.pss_std_2##c.x92 c.sq_pss_std_2##c.x91 c.sq_pss_std_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.pss_std_2##c.x91 c.pss_std_2##c.x92 c.sq_pss_std_2##c.x91 c.sq_pss_std_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.pss_std_2##c.x91 c.pss_std_2##c.x92 c.sq_pss_std_2##c.x91 c.sq_pss_std_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.pss_std_2##c.x91 c.pss_std_2##c.x92 c.sq_pss_std_2##c.x91 c.sq_pss_std_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.sunhour_2##c.x91 c.sunhour_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int4.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.sunhour_2##c.x91 c.sunhour_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.sunhour_2##c.x91 c.sunhour_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.sunhour_2##c.x91 c.sunhour_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.sunhour_2##c.x91 c.sunhour_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int4.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.locationid##c.sq_time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqtrend.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.locationid##c.sq_time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqtrend.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.locationid##c.sq_time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqtrend.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.locationid##c.sq_time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqtrend.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.locationid##c.sq_time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using sqtrend.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_windspeed_2##c.x91 c.ln_windspeed_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int5.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_windspeed_2##c.x91 c.ln_windspeed_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_windspeed_2##c.x91 c.ln_windspeed_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_windspeed_2##c.x91 c.ln_windspeed_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_windspeed_2##c.x91 c.ln_windspeed_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int5.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int6.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int6.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int6.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int6.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int6.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using timefix.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time  i.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using timefix.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time  i.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using timefix.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time  i.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using timefix.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using timefix.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_precip_2##c.x91 c.ln_precip_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int8.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_precip_2##c.x91 c.ln_precip_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int8.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_precip_2##c.x91 c.ln_precip_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int8.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_precip_2##c.x91 c.ln_precip_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int8.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.ln_precip_2##c.x91 c.ln_precip_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int8.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  c.humid_2##c.pss_std_2 c.humid_2##c.sq_pss_std_2 diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int9.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  c.humid_2##c.pss_std_2 c.humid_2##c.sq_pss_std_2 diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int9.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  c.humid_2##c.pss_std_2 c.humid_2##c.sq_pss_std_2 diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int9.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  c.humid_2##c.pss_std_2 c.humid_2##c.sq_pss_std_2 diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int9.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  c.humid_2##c.pss_std_2 c.humid_2##c.sq_pss_std_2 diff_temp_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int9.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.avgtemp_2 c.humid_2##c.sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35
-outreg2 using myreg-int2sqtemp.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.avgtemp_2 c.humid_2##c.sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2sqtemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.avgtemp_2 c.humid_2##c.sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2sqtemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.avgtemp_2 c.humid_2##c.sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using myreg-int2sqtemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_3 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.avgtemp_2 c.humid_2##c.sq_avgtemp_2 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35  
-outreg2 using myreg-int2sqtemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using main-US.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using main-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using main-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using main-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & Country=="US"
+outreg2 using main-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-* testing sensitivity to different duration to create R0
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0int.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_2 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 25daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & Country!="US"
+outreg2 using main-global.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & Country!="US"
+outreg2 using main-global.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & Country!="US"
+outreg2 using main-global.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & Country!="US"
+outreg2 using main-global.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & Country!="US"
+outreg2 using main-global.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 x91 x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
 
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0int.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
-reg ln_r0_1 ln_popdensity ln_windspeed_2 ln_totalsnow_2 ln_precip_2  pss_std_2 sq_pss_std_2 c.humid_2##c.x91 c.humid_2##c.x92 sunhour_2 diff_temp_2 humid_2    trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=35 
-outreg2 using 15daysr0int.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 stemp1 stemp2 stemp3 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 2splinetemp.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 stemp1 stemp2 stemp3 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 2splinetemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 stemp1 stemp2 stemp3 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 2splinetemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 stemp1 stemp2 stemp3 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 2splinetemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 stemp1 stemp2 stemp3 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using 2splinetemp.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone  ln_windspeed_2 pss_std_2 sq_pss_std_2 ln_precip_2 humid_2 uv_std sq_uv_std avgtemp_std sq_avgtemp_std sunhour_2 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqeffect.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone ln_windspeed_2 pss_std_2 sq_pss_std_2 ln_precip_2 humid_2 uv_std sq_uv_std avgtemp_std sq_avgtemp_std sunhour_2 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqeffect.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone ln_windspeed_2 pss_std_2 sq_pss_std_2 ln_precip_2 humid_2 uv_std sq_uv_std avgtemp_std sq_avgtemp_std sunhour_2 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqeffect.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone ln_windspeed_2 pss_std_2 sq_pss_std_2 ln_precip_2 humid_2 uv_std sq_uv_std avgtemp_std sq_avgtemp_std sunhour_2 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using sqeffect.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone ln_windspeed_2 pss_std_2 sq_pss_std_2 ln_precip_2 humid_2 uv_std sq_uv_std avgtemp_std sq_avgtemp_std sunhour_2 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using sqeffect.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uvindex   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using linearuv.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uvindex   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using linearuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uvindex  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using linearuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uvindex diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using linearuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uvindex diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using linearuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_3  avg_so2 avg_ozone  avg_pm  ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 avg_uv_std sq_avg_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using lagpollution.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  avg_so2 avg_ozone avg_pm   ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 avg_uv_std sq_avg_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using lagpollution.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  avg_so2 avg_ozone avg_pm   ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 avg_uv_std sq_avg_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using lagpollution.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  avg_so2 avg_ozone avg_pm   ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 avg_uv_std sq_avg_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using lagpollution.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  avg_so2 avg_ozone avg_pm   ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 avg_uv_std sq_avg_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using lagpollution.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_1  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 15day.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_1  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 15day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_1  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 15day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_1  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 15day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_1  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using 15day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 25day.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 25day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 25day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using 25day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_2  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using 25day.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_precip_2  humid_2 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using onlyuv.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_precip_2  humid_2  uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using onlyuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_precip_2 humid_2  uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using onlyuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_precip_2 humid_2  uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using onlyuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2 c.ln_precip_2 humid_2  uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using onlyuv.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38  & uvindex<13.25
+outreg2 using uvsen2.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & uvindex<13.25
+outreg2 using uvsen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & uvindex<13.25
+outreg2 using uvsen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & uvindex<13.25
+outreg2 using uvsen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & uvindex<13.25
+outreg2 using uvsen2.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38  & uvindex<10.66
+outreg2 using uvsen3.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & uvindex<10.66
+outreg2 using uvsen3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & uvindex<10.66
+outreg2 using uvsen3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & uvindex<10.66
+outreg2 using uvsen3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & uvindex<10.66
+outreg2 using uvsen3.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  ln_precip_2 humid_2 x91 x92 uvspline11 uvspline12 uvspline13 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using uvspline.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uvspline11 uvspline12 uvspline13 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using uvspline.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uvspline11 uvspline12 uvspline13  diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using uvspline.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uvspline11 uvspline12 uvspline13 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using uvspline.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uvspline11 uvspline12 uvspline13 diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using uvspline.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+*interactions
+
+
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  c.x91##c.humid_2 c.x92##c.humid_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp24.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp24.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp24.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp24.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using int-temp24.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2   c.x91##c.ln_so2 c.x92##c.ln_so2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp27.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp27.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp27.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-temp27.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using int-temp27.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2   c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-uv22.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2   c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-uv22.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-uv22.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-uv22.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2 c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using int-uv22.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-pm25.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-pm25.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-pm25.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using int-pm25.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  
+outreg2 using int-pm25.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 abs_humid x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using abs_humid.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 abs_humid x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using abs_humid.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 abs_humid x91 x92 uv_std sq_uv_std   diff_temp_2 i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using abs_humid.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 abs_humid x91 x92 uv_std sq_uv_std   diff_temp_2 i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using abs_humid.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 abs_humid x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using abs_humid.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2  c.x91##c.humid_2 c.x92##c.humid_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp24-US.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp24-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp24-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp24-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone    ln_windspeed_2 pss_std_2 c.x91##c.humid_2 c.x92##c.humid_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & Country=="US"
+outreg2 using int-temp24-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2   c.x91##c.ln_so2 c.x92##c.ln_so2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp27-US.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp27-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp27-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-temp27-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.x91##c.ln_so2 c.x92##c.ln_so2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & Country=="US"
+outreg2 using int-temp27-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2   c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-uv22-US.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2   c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-uv22-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-uv22-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-uv22-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2 c.uv_std##c.ln_precip_2 c.sq_uv_std##c.ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"  
+outreg2 using int-uv22-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std    diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=10 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-pm25-US.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=15 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-pm25-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-pm25-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=25 & pss_std_2>=-1 & pss_std_2<=38 & Country=="US"
+outreg2 using int-pm25-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3  ln_so2 ln_ozone     ln_windspeed_2 pss_std_2  c.ln_pm##c.pss_std_2  ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=30 & pss_std_2>=-1 & pss_std_2<=38  & Country=="US"
+outreg2 using int-pm25-US.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+reg ln_r0_3 ln_no2 ln_pm ln_so2 ln_ozone ln_windspeed_2 pss_std_2  visi winddir cloudcover ln_totalsnow_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using alternative.doc, alpha(0.001, 0.01, 0.05) replace ctitle(Model 1)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 abs_humid x91 x92 uv_std sq_uv_std   diff_temp_2  i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using alternative.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 2)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2 ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2 i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 & r0_3<3.81
+outreg2 using alternative.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 3)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2   ln_precip_2 humid_2 x91 x92 uv_std sq_uv_std   diff_temp_2 trend1-trend3739 i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using alternative.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 4)
+reg ln_r0_3 ln_so2 ln_ozone ln_windspeed_2 pss_std_2 ln_precip_2 humid x91 x92 uv_std sq_uv_std diff_temp_2 moonillu i.locationid##c.time i.day_of_week if china_province!=1 & expo>=1  & avgtemp_2>-20 & xxx>=20 & pss_std_2>=-1 & pss_std_2<=38 
+outreg2 using alternative.doc, alpha(0.001, 0.01, 0.05) append ctitle(Model 5)
+
+
+
+

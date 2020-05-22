@@ -5,7 +5,7 @@ function [bout,bint,sz,rsqr]=testSynthetic2(Data,testNum,numC,tm,scnNm, varargin
 p=inputParser;
 
 addOptional(p,'simL',50);   %simulation length
-addOptional(p,'bCntB',3);   %R0 to use
+addOptional(p,'bCntB',4);   %R0 to use
 addOptional(p,'stdR',0.3);   %standard deviation of R0 multipier
 addOptional(p,'initInf',3);   %initial infectious population
 addOptional(p,'rcvDly',20);   %delay in recovery
@@ -17,7 +17,7 @@ addOptional(p,'minR0',0);   %minimum R0 percentile to include in analysis
 addOptional(p,'minEx',1);   %minimum exposure to include in analysis
 addOptional(p,'oldDrop',[]);   %whether to drop days where X-14 days before we had no more exposure than 1
 addOptional(p,'earlyDrop',10);   %whether to drop days where X-14 days before we had no more exposure than 1
-addOptional(p,'nofixed',1);   %no fixed effects
+addOptional(p,'nofixed',0);   %no fixed effects
 addOptional(p,'notrend',0);   %no linear trend term
 addOptional(p,'notrend2',1);   %no second order trend term
 addOptional(p,'nolint',1);   %no linear trend with a break point that is case specific
@@ -37,7 +37,8 @@ addOptional(p,'nsSeed',[]);  %noise see to pass in case
 addOptional(p,'cmlReg',0);  %if to use cumulative formulation, and for how many days
 addOptional(p,'cmlMovAg',0);  %if to use moving average version of cumulative formulation
 addOptional(p,'minTempVar',0);  %the percentile for temperature variance to be included in the simulation sample
-
+addOptional(p,'tempShiftRng',60);    %the range for temperature shift from first day of data (Jan 23, 2019)
+addOptional(p,'dcslp',[0.03 0.05]); %the range of slopes of responses, fractional reduction per day in infections
 parse(p,varargin{:});
 
 simL=p.Results.simL;
@@ -74,7 +75,8 @@ nsSeed=p.Results.nsSeed;
 cmlReg=p.Results.cmlReg;
 cmlMovAg=p.Results.cmlMovAg;
 minTempVar=p.Results.minTempVar;
-
+tempShiftRng=p.Results.tempShiftRng;
+dcslp=p.Results.dcslp;
 
 trng=[-30 50];  %range of temperatures to include in analysis
 
@@ -133,6 +135,8 @@ for i=1:testNum
     for k=1:numC
         %pick the city to simulate
         inx=locinx(ord(k));
+        tshf=round(rand()*tempShiftRng); %the shift in starting time for temperature
+        dcsl=rand()*(dcslp(2)-dcslp(1))+dcslp(1);
         inx2=locinx(floor(rand()*dSz)+1);
         
         switch normalizeR
@@ -162,12 +166,16 @@ for i=1:testNum
         dtcPrbAg=[dtcPrb.*dtcFrac(1:numel(dtcPrb)) 1-sum(dtcPrb.*dtcFrac(1:numel(dtcPrb)))];
         msrAdd=mnrnd(infD(1),dtcPrbAg);
         msrD(1:dtcMx)=msrD(1:dtcMx)+msrAdd(1:end-1);
+        cntStr=1000;
         
         %create epidemic and measures using a simulation
         for j=1:simL
-            
-            expD(j)=poissrnd(infD(j)*bCnt*wimp(D(inx,j))*susD(j)/susD(1))*randExposure+...
-                (1-randExposure)*round(infD(j)*bCnt*wimp(D(inx,j))*susD(j)/susD(1));
+            if cntStr>simL & msrD(j)>0
+                cntStr=j;
+            end
+            teff=exp(-dcsl*max(0,j-cntStr));
+            expD(j)=poissrnd(infD(j)*bCnt*wimp(D(inx,j+tshf))*susD(j)/susD(1)*teff)*randExposure+...
+                (1-randExposure)*round(infD(j)*bCnt*wimp(D(inx,j+tshf))*teff*susD(j)/susD(1));
             susD(j+1)=max(0,susD(j)-expD(j));      %update susceptible
             rcvD(1+j:j+rcvMx)=rcvD(1+j:rcvMx+j)+mnrnd(round(expD(j)),rcvPrb); %create recoveries
             if ~isempty(dtcFr)
@@ -228,7 +236,7 @@ for i=1:testNum
         else
             tms=[1:numel(estmR)]';
         end
-        tmps=[D(inx*(1-CityShift)+CityShift*inx2,1+TimeShift:numel(estmR)+TimeShift)]';
+        tmps=[D(inx*(1-CityShift)+CityShift*inx2,1+TimeShift+tshf:numel(estmR)+TimeShift+tshf)]';
         lbl=k*ones(size(estmR));
         if cmlReg>0         %when using cumulative formulations
             if cmlMovAg     %when using cumulative with moving average
