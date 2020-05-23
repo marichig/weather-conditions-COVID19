@@ -12,8 +12,6 @@ Assistant Professor, Harvard Medical School<br/>
 Massachusetts General Hospital, Institute for Technology Assessment<br/>
 msjalali \[at] mgh \[dot] harvard \[dot] edu
 
-5/21 Note: We are including pollution variables in the study, and will push our new files over the coming few days.
-
 ## Links
 [Project website, including an interactive simulator](https://projects.iq.harvard.edu/covid19)
 
@@ -21,7 +19,7 @@ Paper and appendix on [SSRN](https://papers.ssrn.com/sol3/papers.cfm?abstract_id
 
 ## Sections
 The code for this project is broken into four parts:
-1. [WeatherDataCollection](WeatherDataCollection) provides code for downloading global weather data from [World Weather Online](https://www.worldweatheronline.com/) (using [wwo-hist](https://github.com/ekapope/WorldWeatherOnline)) and [OpenWeatherMap](https://openweathermap.org/) (using [pyowm](https://github.com/csparpa/pyowm)), and contains the case-weather data files, with data coming from [Johns Hopkins University Center for Systems Science and Engineering](https://github.com/CSSEGISandData/COVID-19).
+1. [WeatherDataCollection](WeatherDataCollection) provides code for downloading global weather data from [World Weather Online](https://www.worldweatheronline.com/) (using [wwo-hist](https://github.com/ekapope/WorldWeatherOnline)), [OpenWeatherMap](https://openweathermap.org/) (using [pyowm](https://github.com/csparpa/pyowm)), and for extracting air pollution data from files downloaded from the [European Centre for Medium-Range Weather Forecasting](https://www.ecmwf.int/). Furthermore, it contains the case-weather data files, with data coming from [Johns Hopkins University Center for Systems Science and Engineering](https://github.com/CSSEGISandData/COVID-19).
 2. [ABM](ABM) provides code for running the agent-based model used to generate synthetic data for testing.
 3. [SyntheticDataExploration](SyntheticDataExploration) provides code for preprocessing the synthetic case data into a metric incorporating detection delay. This preprocessing was also applied to real case data from JHU.
 4. [StatisticalAnalyses](StatisticalAnalyses) provides STATA code for performing the regression analyses.
