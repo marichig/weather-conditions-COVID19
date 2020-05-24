@@ -1,9 +1,9 @@
-# Supplementary Code and Data for "Weather Conditions and COVID-19 Transmission: Estimates and Projections," Xu et al.
+# Supplementary Code and Data for "The Modest Impact of Weather and Air Pollution on COVID-19 Transmission," Xu et al.
 
 This repository provides the code and data needed to replicate the results presented in [Xu et al.](https://ssrn.com/abstract=3593879). The paper and its appendix provide detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
 
 This research can be cited as:
->Xu R.,  Rahmandad H., Gupta M., DiGennaro C., Ghaffarzadegan N., Amini, H., Jalali M.S., Weather Conditions and COVID-19 Transmission: Estimates and Projections, (May 5, 2020), Social Science Research Network: https://ssrn.com/abstract=3593879
+>Xu R.,  Rahmandad H., Gupta M., DiGennaro C., Ghaffarzadegan N., Amini, H., Jalali M.S., The Modest Impact of Weather and Air Pollution on COVID-19 Transmission, (May 5, 2020), Social Science Research Network: https://ssrn.com/abstract=3593879
 
 Correspondance can be directed to:
 
