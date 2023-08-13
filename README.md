@@ -1,6 +1,6 @@
 # Supplementary Code and Data for "Weather, air pollution, and SARS-CoV-2 transmission: a global analysis," Xu et al.
 
-This repository provides the code and data needed to replicate the results presented in [Xu et al.]([https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(21)00202-3/fulltext#seccestitle10]). The paper and its appendix provide detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
+This repository provides the code and data needed to replicate the results presented in [Xu et al](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(21)00202-3/fulltext#seccestitle10), published in The Lancet: Planetary Health. The paper and its appendix provide detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
 
 Correspondance can be directed to:
 
