@@ -1,9 +1,6 @@
-# Supplementary Code and Data for "The Modest Impact of Weather and Air Pollution on COVID-19 Transmission," Xu et al.
+# Supplementary Code and Data for "Weather, air pollution, and SARS-CoV-2 transmission: a global analysis," Xu et al.
 
-This repository provides the code and data needed to replicate the results presented in [Xu et al.](https://ssrn.com/abstract=3593879). The paper and its appendix provide detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
-
-This research can be cited as:
->Xu R.,  Rahmandad H., Gupta M., DiGennaro C., Ghaffarzadegan N., Amini, H., Jalali M.S., The Modest Impact of Weather and Air Pollution on COVID-19 Transmission, (May 5, 2020), Social Science Research Network: https://ssrn.com/abstract=3593879
+This repository provides the code and data needed to replicate the results presented in [Xu et al.]([https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(21)00202-3/fulltext#seccestitle10]). The paper and its appendix provide detail on the methods used and should be viewed in tandem with the code and data here. Moreover, we provide some direction here for running the analyses.
 
 Correspondance can be directed to:
 
@@ -14,8 +11,6 @@ msjalali \[at] mgh \[dot] harvard \[dot] edu
 
 ## Links
 [Project website, including an interactive simulator](https://projects.iq.harvard.edu/covid19)
-
-Paper and appendix on [SSRN](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3593879) and [ResearchGate](https://www.researchgate.net/publication/341165460_Weather_Conditions_and_COVID-19_Transmission_Estimates_and_Projections) 
 
 ## Sections
 The code for this project is broken into four parts:
